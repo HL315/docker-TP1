@@ -1,0 +1,40 @@
+version: '3.8'  # Specify the exact version of Docker Compose
+
+services:
+  # MongoDB service
+  mongo:
+    image: mongo
+    ports:
+    - "27017:27017"
+    networks:
+      - app-network
+    # Add a health check for MongoDB
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "printjson(db.serverStatus())"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Fastify service
+  fastify:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mongo
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    networks:
+      - app-network
+    # Add a health check for Fastify
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  app-network:
+    driver: bridge
